@@ -14,6 +14,7 @@ import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.GrantedAuthority;
@@ -37,7 +38,7 @@ public class LoginService {
 
     @Value("${spring.Access.token.Expiration}")
     private long ACCESS_TOKEN_EXPIRATION;
-
+    private final StringRedisTemplate stringRedisTemplate;
     private final UserMapper userMapper;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -46,7 +47,8 @@ public class LoginService {
     private final UtilService utilService;
     private final RedisTemplate redisTemplate;
     @Autowired
-    public LoginService(AuthenticationManager authenticationManager, UserMapper userMapper, JwtService jwtService, RefreshTokenService refreshTokenService, SessionService sessionservice, UtilService utilService, RedisTemplate redisTemplate) {
+    public LoginService(StringRedisTemplate stringRedisTemplate, AuthenticationManager authenticationManager, UserMapper userMapper, JwtService jwtService, RefreshTokenService refreshTokenService, SessionService sessionservice, UtilService utilService, RedisTemplate redisTemplate) {
+        this.stringRedisTemplate = stringRedisTemplate;
         this.authenticationManager = authenticationManager;
         this.userMapper = userMapper;
         this.jwtService = jwtService;
@@ -65,47 +67,75 @@ public class LoginService {
     }
 
 
-    public Claims validationAccessToken(String accessToken,HttpSession session,String fingerprint,String username) {
-        if(session==null){;
-            String key = "finger-print:" + username;
-            if(!fingerprint.equals(redisTemplate.opsForValue().get(key))){
-                throw new CustomExceptions.AuthenticationFailedException("Finger Data not equals original Data");
-            }
-        }else {
+    public Claims validationAccessToken(String accessToken, HttpSession session, String fingerprint, String username) {
+        if (session == null) {
+            verifyFingerprint(username, fingerprint);
+        } else {
             username = (String) session.getAttribute("username");
         }
+
         if (StringUtils.isBlank(username)) {
-            throw new CustomExceptions.AuthenticationFailedException("Username extraction from Session failed. Null Session");
+            throw new CustomExceptions.AuthenticationFailedException("Username extraction from Session failed. Null or empty username.");
         }
-        Claims claims = null;
+
+        return extractClaimsOrValidateRefreshToken(accessToken, username);
+    }
+
+
+    private void verifyFingerprint(String username, String requestFingerprint) {
+        String key = "finger-print:" + username;
+        String storedFingerprint = stringRedisTemplate.opsForValue().get(key);
+
+        if (storedFingerprint == null) {
+            throw new CustomExceptions.AuthenticationFailedException("Fingerprint not found in Redis.");
+        }
+
+        if (!requestFingerprint.equals(storedFingerprint)) {
+            throw new CustomExceptions.AuthenticationFailedException("Fingerprint does not match original fingerprint.");
+        }
+    }
+
+
+    private Claims extractClaimsOrValidateRefreshToken(String accessToken, String username) {
         try {
-            claims = jwtService.getAllClaimsFromToken(accessToken);
-        } catch (JwtException AccessException) {
+            return jwtService.getAllClaimsFromToken(accessToken);
+        } catch (JwtException accessTokenException) {
+            // accessToken 만료 또는 이상
             String refreshToken = refreshTokenService.getRefreshToken(username);
+
             if (StringUtils.isBlank(refreshToken)) {
                 throw new CustomExceptions.MissingRequestBodyException("Refresh token is missing");
             }
+
             if (!jwtService.validateRefreshToken(refreshToken, username)) {
                 throw new CustomExceptions.TokenException("Refresh token is not valid");
             }
-            if(!jwtService.validateToken(refreshToken)){
-                throw new CustomExceptions.TokenException("Token expired. Please login again");
+
+            if (!jwtService.validateToken(refreshToken)) {
+                throw new CustomExceptions.TokenException("Refresh token expired. Please login again");
             }
-            List<String> roles =userMapper.FindByRoles(username);
-            claims = Jwts.claims();
+
+
+            List<String> roles = userMapper.FindByRoles(username);
+
+            Claims claims = Jwts.claims();
             claims.setSubject(username);
             claims.put("roles", roles);
-        }
-        return claims;
 
+            return claims;
+        }
     }
+
     public String authlogin(AuthLoginRequest authLoginRequest,HttpServletRequest request, HttpServletResponse response){
+
         SecurityContextHolder.getContext().getAuthentication();
         String username = "";
         username = utilService.getUserNameFromCookies(request);
+
         if(StringUtils.isBlank(username)){
             throw new CustomExceptions.MissingRequestBodyException("Username is missing");
         }
+
 
         String accessToken = getAccessToken(request);
         HttpSession session = request.getSession(false);
@@ -160,7 +190,7 @@ public class LoginService {
         String refreshToken = jwtService.generateRefreshToken(username);
         refreshTokenService.saveRefreshToken(username, refreshToken);
 
-        redisTemplate.opsForValue().set("finger-print:"+username, loginRequest.getFingerprint(), 60 * 60 * 24 * 7, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set("finger-print:" + username, loginRequest.getFingerprint(), 7, TimeUnit.DAYS);
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("Access-Token", accessToken)
                 .httpOnly(true)
@@ -193,6 +223,9 @@ public class LoginService {
         username = utilService.getUserNameFromCookies(request);
         if(StringUtils.isBlank(username)){
             throw new CustomExceptions.MissingRequestBodyException("Username is missing");
+        }
+        if(StringUtils.isBlank(authLogoutRequest.getFingerprint())){
+            throw new CustomExceptions.MissingRequestBodyException("fingerprint is missing");
         }
 
         HttpSession session = request.getSession(false);

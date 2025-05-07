@@ -2,7 +2,7 @@
 <configuration>
 
     <!-- 로그파일 저장 경로 -->
-    <property name="LOG_DIR" value="C:/Users/Pesik/Desktop/SecurityMVC/logs" />
+    <property name="LOG_DIR" value="C:\Users\user\Desktop\Security-MVC-Session-JWT\logs" />
 
     <!-- 콘솔 로그 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
