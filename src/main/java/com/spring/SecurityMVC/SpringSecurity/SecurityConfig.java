@@ -101,7 +101,7 @@ public class SecurityConfig {
                 )
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
-                    config.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // 허용할 도메인 설정
+                    config.setAllowedOrigins(Arrays.asList("http://localhost:5173")); // 허용할 도메인 설정
                     config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 허용할 HTTP 메서드 설정
                     config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type")); // 허용할 헤더 설정
                     config.setAllowCredentials(true); // 자격 증명 허용

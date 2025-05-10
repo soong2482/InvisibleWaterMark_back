@@ -24,6 +24,9 @@ public class CustomExceptions {
             super(message);
         }
     }
+    public static class InvalidEmailFormatException extends  IllegalArgumentException{
+        public InvalidEmailFormatException(String message) {super(message);}
+    }
 
     // 401 Unauthorized - 인증 실패
     public static class AuthenticationFailedException extends AuthenticationException {

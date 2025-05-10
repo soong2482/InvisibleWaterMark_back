@@ -25,6 +25,7 @@ public class SignUpService {
     private final RedisTemplate<String, String> redisTemplate;
     private final PasswordEncoder passwordEncoder;
     private final UtilService utilService;
+    private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
     public SignUpService(UserMapper userMapper, EmailService emailService, RedisTemplate<String, String> redisTemplate, PasswordEncoder passwordEncoder, UtilService utilService) {
         this.userMapper = userMapper;
         this.emailService = emailService;
@@ -38,6 +39,7 @@ public class SignUpService {
             throw new CustomExceptions.InvalidRequestException("SignUp information cannot be null");
         }
         signUp.setRoleid("1");
+        signUp.setPhone("zero");
         String encryptedPassword = passwordEncoder.encode(signUp.getPassword());
         signUp.setPassword(encryptedPassword);
         signUp.setIpaddress(utilService.getClientIP(request));
@@ -107,10 +109,14 @@ public class SignUpService {
         if (email == null || email.trim().isEmpty()) {
             throw new CustomExceptions.InvalidRequestException("Email cannot be null or empty");
         }
+        if (!email.matches(EMAIL_REGEX)) {
+            throw new CustomExceptions.InvalidEmailFormatException("Invalid email format: " + email);
+        }
         if (userMapper.FindByEmail(email).isPresent()) {
             throw new CustomExceptions.UserAlreadyExistsException("Email already exists");
         } else {
             return email+": Available for use";
         }
+
     }
 }
