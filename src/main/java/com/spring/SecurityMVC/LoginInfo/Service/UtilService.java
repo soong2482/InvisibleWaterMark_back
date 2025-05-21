@@ -81,7 +81,7 @@ public class UtilService {
 
     public String getUserNameFromCookies(HttpServletRequest request) {
         if(request.getCookies()==null){
-            throw new CustomExceptions.MissingRequestBodyException("Cookies are missing");
+            throw new CustomExceptions.MissingRequestBodyException("Username Cookies is missing");
         }
         for (Cookie cookie : request.getCookies()) {
             if ("username".equals(cookie.getName())) {

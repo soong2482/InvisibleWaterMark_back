@@ -72,6 +72,12 @@ public class CustomExceptions {
             super(message);
         }
     }
+    public static class UserNotFoundException extends RuntimeException {
+        public UserNotFoundException(String message) {
+            super(message);
+        }
+    }
+
 
     // 409 Conflict - 충돌
     public static class UserAlreadyExistsException extends IllegalStateException {

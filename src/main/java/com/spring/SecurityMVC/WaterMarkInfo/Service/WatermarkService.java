@@ -5,11 +5,15 @@ import com.spring.SecurityMVC.CommonInfo.MultipartInputStreamFileResource;
 import com.spring.SecurityMVC.LoginInfo.Service.UtilService;
 import com.spring.SecurityMVC.SpringSecurity.ExceptionHandler.CustomExceptions;
 import com.spring.SecurityMVC.WaterMarkInfo.Domain.WatermarkEmbed;
+import com.spring.SecurityMVC.WaterMarkInfo.Domain.WatermarkLog;
+import com.spring.SecurityMVC.WaterMarkInfo.Mapper.WaterMarkMapper;
 import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.*;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -17,15 +21,43 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class WatermarkService {
     private final UtilService utilService;
-
-    public WatermarkService(UtilService utilService) {
+    private final WaterMarkMapper waterMarkMapper;
+    public WatermarkService(UtilService utilService, WaterMarkMapper waterMarkMapper) {
         this.utilService = utilService;
+        this.waterMarkMapper = waterMarkMapper;
     }
+    public String extractUsernameFromSecurityContextOrCookie(HttpServletRequest request) {
+        String username = utilService.getUserNameFromCookies(request);
 
+        if (StringUtils.isBlank(username)) {
+            throw new CustomExceptions.MissingRequestBodyException("Username is missing");
+        }
+
+        return username;
+    }
+    //-----------------------get-------------------------//
+    public ResponseEntity<List<WatermarkLog>> getWaterMarkLogAll(HttpServletRequest request,HttpServletResponse response){
+        String username = extractUsernameFromSecurityContextOrCookie(request);
+
+        List<WatermarkLog> watermarkLogs = waterMarkMapper.getWaterMarkLogAll(username);
+        if (watermarkLogs.isEmpty()) {
+            throw new CustomExceptions.UserNotFoundException("The specified user could not be found: " + username);
+        }
+
+        return ResponseEntity.ok(watermarkLogs);
+    }
+    //-----------------------Embed-------------------------//
     public ResponseEntity<byte[]> embed(String data, MultipartFile imgFile, HttpServletRequest request, HttpServletResponse response) throws IOException {
         if(StringUtils.isBlank(data)){
             throw new CustomExceptions.MissingRequestBodyException("Text is missing");
@@ -33,25 +65,48 @@ public class WatermarkService {
         ObjectMapper mapper = new ObjectMapper();
         WatermarkEmbed embed = mapper.readValue(data, WatermarkEmbed.class);
 
-        SecurityContextHolder.getContext().getAuthentication();
-        String username = "";
-        username = utilService.getUserNameFromCookies(request);
-
-        if(StringUtils.isBlank(username)){
-            throw new CustomExceptions.MissingRequestBodyException("Username is missing");
-        }
+        String username = extractUsernameFromSecurityContextOrCookie(request);
         if(!embed.getUsername().equals(username)){
             throw new CustomExceptions.InvalidRequestException("Username is not equals");
         }
 
-        byte[] watermarkedImage = sendToPython(imgFile, username, embed.getText());
+        String text = embed.getText();
+        String token = hashText(10);
 
+        byte[] watermarkedImage = sendToPythonEmbed(imgFile, username, token);
+
+        WatermarkLog watermarkLog = new WatermarkLog();
+        watermarkLog.setHash(token);
+        watermarkLog.setUsername(username);
+        watermarkLog.setText(text);
+        watermarkLog.setCreatedAt(LocalDateTime.now());
+
+        try {
+            waterMarkMapper.insertWaterMarkLog(watermarkLog);
+        } catch (DuplicateKeyException e) {
+            throw new CustomExceptions.UserAlreadyExistsException("Duplicate hash entry: " + e.getMessage());
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomExceptions.DataConflictException("Watermark data integrity violation: " + e.getMessage());
+        } catch (DataAccessException e) {
+            throw new CustomExceptions.DatabaseException("Watermark database operation failed: " + e.getMessage());
+        }
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_PNG)
                 .body(watermarkedImage);
 
     }
-    public byte[] sendToPython(MultipartFile imgFile, String username, String text) throws IOException {
+    public ResponseEntity<String> detectingFace(MultipartFile imgFile, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String result = sendToPythonDetecting(imgFile);
+
+        if ("ok".equalsIgnoreCase(result)) {
+            return ResponseEntity.ok("Detecting Success");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Face not detected");
+        }
+    }
+
+    //------------------------python------------------------------------//
+    public byte[] sendToPythonEmbed(MultipartFile imgFile, String username, String text) throws IOException {
         String pythonUrl = "http://localhost:8000/embed";
 
         HttpHeaders headers = new HttpHeaders();
@@ -72,6 +127,49 @@ public class WatermarkService {
                 byte[].class
         );
 
-        return response.getBody();  // 워터마크 처리된 이미지 (바이트)
+        return response.getBody();
     }
+    public String sendToPythonDetecting(MultipartFile imgFile) throws IOException {
+        String pythonUrl = "http://localhost:8000/detecting";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("image", new MultipartInputStreamFileResource(imgFile.getInputStream(), imgFile.getOriginalFilename()));
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.exchange(
+                pythonUrl,
+                HttpMethod.POST,
+                requestEntity,
+                String.class
+        );
+
+        return response.getBody();
+    }
+    //------------Hash--------------------------------//
+    public String hashText(int length) {
+        String charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+        SecureRandom random = new SecureRandom();
+
+        for (int attempt = 0; attempt < 5; attempt++) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < length; i++) {
+                sb.append(charset.charAt(random.nextInt(charset.length())));
+            }
+            String tokenId = sb.toString();
+
+
+            if (!waterMarkMapper.existsByTokenId(tokenId)) {
+                return tokenId;
+            }
+        }
+
+        throw new CustomExceptions.DataConflictException("Too many duplicate token_id collisions. Failed to generate a unique token.");
+    }
+
 }
+

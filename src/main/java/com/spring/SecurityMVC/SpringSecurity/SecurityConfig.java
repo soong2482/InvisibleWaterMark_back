@@ -22,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -101,16 +102,16 @@ public class SecurityConfig {
                 )
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
-                    config.setAllowedOrigins(Arrays.asList("http://localhost:5173")); // 허용할 도메인 설정
-                    config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 허용할 HTTP 메서드 설정
-                    config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type")); // 허용할 헤더 설정
-                    config.setAllowCredentials(true); // 자격 증명 허용
+                    config.setAllowedOriginPatterns(List.of("http://localhost:5173"));
+                    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(List.of("*")); // 또는 ["Authorization", "Content-Type"]
+                    config.setAllowCredentials(true);
                     return config;
                 }))
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/Security/Admin/**").hasRole("ADMIN")
-                        .requestMatchers("/Security/SuperAdmin/**").hasRole("SUPER_ADMIN")
-                        .requestMatchers("/Security/User/**").hasRole("USER")
+                        .requestMatchers("/4768b05aa6df12a2ddad4c3a58ad2da2/Admin/**").hasRole("ADMIN")
+                        .requestMatchers("/4768b05aa6df12a2ddad4c3a58ad2da2/SuperAdmin/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/4768b05aa6df12a2ddad4c3a58ad2da2/User/**").hasRole("USER")
                         .anyRequest().permitAll()
                 )
                 .formLogin(formLogin -> formLogin.disable())

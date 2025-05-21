@@ -26,7 +26,7 @@ public class CustomSuperAdminAuthenticationFilter extends AbstractAuthentication
     private final UtilSecurityService utilSecurityService;
 
     public CustomSuperAdminAuthenticationFilter(CustomSuccessHandler successHandler, CustomFailedHandler failureHandler, UtilSecurityService utilSecurityService) {
-        super(new AntPathRequestMatcher("/Security/SuperAdmin/**"));
+        super(new AntPathRequestMatcher("/4768b05aa6df12a2ddad4c3a58ad2da2/SuperAdmin/**"));
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
         this.utilSecurityService = utilSecurityService;

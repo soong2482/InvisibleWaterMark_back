@@ -154,7 +154,7 @@ public class LoginService {
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("Access-Token", newAccessToken)
                 .httpOnly(true)
-                .secure(true)
+//                .secure(true)
                 .path("/")
                 .maxAge(ACCESS_TOKEN_EXPIRATION)
                 .build();
@@ -194,7 +194,7 @@ public class LoginService {
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("Access-Token", accessToken)
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .path("/")
                 .maxAge(ACCESS_TOKEN_EXPIRATION)
                 .build();
@@ -202,7 +202,7 @@ public class LoginService {
 
         ResponseCookie userNameCookie = ResponseCookie.from("username",username)
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .path("/")
                 .maxAge(REFRESH_TOKEN_EXPIRATION)
                 .build();

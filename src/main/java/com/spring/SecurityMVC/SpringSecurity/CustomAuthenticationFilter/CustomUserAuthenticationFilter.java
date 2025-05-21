@@ -26,7 +26,7 @@ public class CustomUserAuthenticationFilter extends AbstractAuthenticationProces
     private final UtilSecurityService utilSecurityService;
 
     public CustomUserAuthenticationFilter(CustomSuccessHandler successHandler, CustomFailedHandler failureHandler, UtilSecurityService utilSecurityService) {
-        super(new AntPathRequestMatcher("/Security/User/**"));
+        super(new AntPathRequestMatcher("/4768b05aa6df12a2ddad4c3a58ad2da2/User/**"));
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
         this.utilSecurityService = utilSecurityService;

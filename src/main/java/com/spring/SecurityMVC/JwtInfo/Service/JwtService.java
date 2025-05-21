@@ -1,8 +1,11 @@
 package com.spring.SecurityMVC.JwtInfo.Service;
 
+import com.spring.SecurityMVC.SpringSecurity.ExceptionHandler.CustomExceptions;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -38,7 +41,25 @@ public class JwtService {
                 .compact();
     }
 
+    public String getUsernameFromRequest(HttpServletRequest request) {
+        String token = extractAccessTokenFromCookies(request);
+        if (!validateToken(token)) {
+            throw new CustomExceptions.TokenException("Access token is invalid");
+        }
+        Claims claims = getAllClaimsFromToken(token);
+        return claims.getSubject();
+    }
 
+    public String extractAccessTokenFromCookies(HttpServletRequest request) {
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("Access-Token".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        throw new CustomExceptions.MissingRequestBodyException("The accessToken cookie is missing");
+    }
     public Boolean validateToken(String token) {
         return !isTokenExpired(token);
     }

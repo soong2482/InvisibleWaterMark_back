@@ -26,7 +26,7 @@ public class CustomAdminAuthenticationFilter extends AbstractAuthenticationProce
     private final UtilSecurityService utilSecurityService;
 
     public CustomAdminAuthenticationFilter(CustomSuccessHandler successHandler, CustomFailedHandler failureHandler, UtilSecurityService utilSecurityService) {
-        super(new AntPathRequestMatcher("/Security/Admin/**"));
+        super(new AntPathRequestMatcher("/4768b05aa6df12a2ddad4c3a58ad2da2/Admin/**"));
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
         this.utilSecurityService = utilSecurityService;
