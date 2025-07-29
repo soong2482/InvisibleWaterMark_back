@@ -190,7 +190,7 @@ public class LoginService {
         String refreshToken = jwtService.generateRefreshToken(username);
         refreshTokenService.saveRefreshToken(username, refreshToken);
 
-        redisTemplate.opsForValue().set("finger-print:" + username, loginRequest.getFingerprint(), 7, TimeUnit.DAYS);
+        stringRedisTemplate.opsForValue().set("finger-print:" + username, loginRequest.getFingerprint(), 7, TimeUnit.DAYS);
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("Access-Token", accessToken)
                 .httpOnly(true)

@@ -16,6 +16,9 @@ public class User implements Serializable {
     private String password;
     private List<SimpleGrantedAuthority> authorities = new ArrayList<>();
     private String email;
+    private String phone;
+    private String apikey;
+    private boolean apiEnabled;
     public void setAuthorities(List<String> roles) {
         for (String role : roles) {
             if (role != null && !role.isEmpty()) {

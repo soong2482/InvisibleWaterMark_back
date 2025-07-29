@@ -14,9 +14,13 @@
         WHERE username = #{username}
         ORDER BY created_at DESC
     </select>
-
+    <select id="getWaterMarkLog" parameterType="string" resultType="com.spring.SecurityMVC.WaterMarkInfo.Domain.WatermarkLog">
+        SELECT hash, username, text, created_at
+        FROM watermark_log
+        WHERE hash = #{hash}
+    </select>
 
     <select id="existsByTokenId" resultType="boolean">
-        SELECT EXISTS (SELECT 1 FROM watermark_log WHERE token_id = #{tokenId} )
+        SELECT EXISTS (SELECT 1 FROM watermark_log WHERE hash = #{hash} )
     </select>
 </mapper>

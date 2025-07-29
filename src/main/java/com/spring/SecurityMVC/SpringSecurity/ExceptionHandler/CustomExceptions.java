@@ -1,10 +1,18 @@
 package com.spring.SecurityMVC.SpringSecurity.ExceptionHandler;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.dao.DataAccessException;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 public class CustomExceptions {
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public static class DecodingFailedException extends RuntimeException {
+        public DecodingFailedException(String message) {
+            super(message);
+        }
+    }
 
     // 400 Bad Request - 잘못된 요청
     public static class InvalidRequestException extends IllegalArgumentException {

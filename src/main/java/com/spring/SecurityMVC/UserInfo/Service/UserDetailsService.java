@@ -1,6 +1,7 @@
 package com.spring.SecurityMVC.UserInfo.Service;
 
 import com.spring.SecurityMVC.UserInfo.Domain.User;
+import com.spring.SecurityMVC.UserInfo.Domain.UsersApiKey;
 import com.spring.SecurityMVC.UserInfo.Mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -78,9 +79,19 @@ public class UserDetailsService {
                 List<String> roles = userMapper.FindByRoles(username);
                 Optional<List<String>> userRoles = Optional.ofNullable(roles);
                 userRoles.ifPresent(user::setAuthorities);
+                Optional<UsersApiKey> usersApiKeyOpt = userMapper.FindByApiKey(username);
+                if(usersApiKeyOpt.isPresent()){
+                    UsersApiKey usersApiKey = usersApiKeyOpt.get();
+                    user.setApikey(usersApiKey.getApiKey());
+                    user.setApiEnabled(usersApiKey.isApiEnabled());
+                }else{
+                    log.error("Failed to FindByUserAPIKey:{}",username);
+                    return Optional.empty();
+                }
+
                 return Optional.of(user);
             } else {
-                log.error("Failed to findByDetailUser:{}: {}", username);
+                log.error("Failed to findByDetailUser:{}", username);
                 return Optional.empty();
             }
         } catch (Exception e) {

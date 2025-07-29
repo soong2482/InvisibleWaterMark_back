@@ -14,6 +14,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -37,15 +39,19 @@ public class SignUpService {
         if (signUp == null  ||signUp.getEmail()==null || signUp.getPassword() == null || signUp.getUsername() == null) {
             throw new CustomExceptions.InvalidRequestException("SignUp information cannot be null");
         }
-        signUp.setRoleid("1");
+        signUp.setRoleId("1");
         signUp.setPhone("zero");
         String encryptedPassword = passwordEncoder.encode(signUp.getPassword());
         signUp.setPassword(encryptedPassword);
         signUp.setIpaddress(utilService.getClientIP(request));
-
         signUp.setEnabled(true);
+        signUp.setApikey(createApiKey());
+        signUp.setCreatedAt(LocalDateTime.now());
+        signUp.setUpdatedAt(LocalDateTime.now());
+        signUp.setApiEnabled(false);
         try {
             userMapper.insertUser(signUp);
+            userMapper.insertApKeys(signUp);
             userMapper.insertAuthority(signUp);
             userMapper.insertEnabled(signUp);
         } catch (DuplicateKeyException e) {
@@ -57,7 +63,10 @@ public class SignUpService {
         }
         return signUp.getUsername()+":SingUp Success";
     }
-
+    public String createApiKey(){
+        String uuid = UUID.randomUUID().toString().replace("-", "");
+        return "ak_" + uuid;
+    }
     public String PostEmail(PostEmail postEmail, HttpServletRequest request, HttpServletResponse response) {
         String email = postEmail.getEmail();
         System.out.println(email);

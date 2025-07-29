@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 public class UserController {
@@ -17,4 +19,11 @@ public class UserController {
         UserInfoResponse userInfo = userService.getUserInfo(request);
         return ResponseEntity.ok(userInfo);
     }
+
+    @GetMapping("${Security.backEndPoint}/User/EmbedList")
+    public ResponseEntity<List<UserInfoResponse>> getEmbedList(HttpServletRequest request){
+//        List<UserInfoResponse> userInfoResponses = userService.getEmbedList();
+        return ResponseEntity.ok(null);
+    }
+
 }

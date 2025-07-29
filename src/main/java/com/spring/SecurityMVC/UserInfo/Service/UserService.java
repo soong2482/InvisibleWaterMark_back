@@ -39,6 +39,6 @@ public class UserService {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-        return new UserInfoResponse(user.getUsername(), user.getEmail(), roles);
+        return new UserInfoResponse(user.getUsername(), user.getEmail(), roles,user.getApikey(),user.isApiEnabled());
     }
 }

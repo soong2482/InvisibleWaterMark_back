@@ -12,5 +12,6 @@ import java.util.Optional;
 public interface WaterMarkMapper {
     void insertWaterMarkLog(WatermarkLog watermarkLog);
     List<WatermarkLog> getWaterMarkLogAll(String username);
-    boolean existsByTokenId(@Param("hash") String tokenId);
+    boolean existsByTokenId(@Param("hash") String hash);
+    Optional<WatermarkLog> getWaterMarkLog(String hash);
 }

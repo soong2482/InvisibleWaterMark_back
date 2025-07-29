@@ -38,7 +38,7 @@ public class CustomUserAuthenticationFilter extends AbstractAuthenticationProces
         HttpSession session = request.getSession(false);
 
         utilSecurityService.validateAuthentication(accessToken, session);
-
+        System.out.println(accessToken);
         Claims claims = utilSecurityService.getAllClaimsFromToken(accessToken);
 
         List<SimpleGrantedAuthority> authorities = utilSecurityService.getRolesFromToken(claims).stream()

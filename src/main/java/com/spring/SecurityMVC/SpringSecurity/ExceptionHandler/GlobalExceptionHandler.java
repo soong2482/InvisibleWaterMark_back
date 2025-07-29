@@ -10,7 +10,12 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
+    @ExceptionHandler(CustomExceptions.DecodingFailedException.class)
+    public ResponseEntity<String> handleDecodingFailed(CustomExceptions.DecodingFailedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNPROCESSABLE_ENTITY) // 👈 반드시 명시
+                .body("QR 디코딩 실패: " + ex.getMessage());
+    }
     // 400 Bad Request - 잘못된 요청
     @ExceptionHandler(CustomExceptions.InvalidRequestException.class)
     public ResponseEntity<String> handleInvalidRequestException(CustomExceptions.InvalidRequestException ex) {

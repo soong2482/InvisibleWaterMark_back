@@ -47,7 +47,7 @@ public class SessionService {
 
 
         String key = "user_session:" + username;
-        redisTemplate.opsForValue().set(key, session.getId(), 1800, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(key, session.getId(), 3600, TimeUnit.SECONDS);
     }
 
 
