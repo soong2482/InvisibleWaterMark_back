@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.spring.SecurityMVC.WaterMarkInfo.Mapper.WaterMarkMapper">
+    <insert id="insertWaterMarkLog" parameterType="com.spring.SecurityMVC.WaterMarkInfo.Domain.WatermarkLog">
+        INSERT INTO watermark_log (hash, username, text, created_at)
+        VALUES (#{hash}, #{username}, #{text}, #{createdAt})
+    </insert>
+
+
+    <select id="getWaterMarkLogAll" parameterType="string" resultType="com.spring.SecurityMVC.WaterMarkInfo.Domain.WatermarkLog">
+        SELECT hash, username, text, created_at
+        FROM watermark_log
+        WHERE username = #{username}
+        ORDER BY created_at DESC
+    </select>
+    <select id="getWaterMarkLog" parameterType="string" resultType="com.spring.SecurityMVC.WaterMarkInfo.Domain.WatermarkLog">
+        SELECT hash, username, text, created_at
+        FROM watermark_log
+        WHERE hash = #{hash}
+    </select>
+
+    <select id="existsByTokenId" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM watermark_log WHERE hash = #{hash} )
+    </select>
+</mapper>

@@ -1,5 +1,9 @@
-*.properties
-HELP.md
+# Properties 파일 관리
+# application.properties는 공통 설정만 포함하므로 Git에 포함
+# 프로파일별 properties 파일은 민감 정보 포함으로 Git에서 제외
+application-*.properties
+!application-*.properties.example
+java_server/HELP.md
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -42,6 +46,28 @@ logs/*.log
 logs/**/*.log
 .vscode/
 #dump/
+
+### Python ###
+# 가상 환경 디렉토리
+venv/
+env/
+ENV/
+.venv/
+python_server/venv/
+python_server/__pycache__/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Python 출력 파일
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Allow properties files
 #제외 하고 싶으면앞에 느낌표 !+
